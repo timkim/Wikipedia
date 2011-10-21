@@ -1,5 +1,3 @@
-
-
 function search() {
   if($('#search').hasClass('inProgress')) {
     window.frames[0].stop();
@@ -22,20 +20,42 @@ function search() {
 
     cachedPages.get(searchParam,function(cache){
       if(cache==null|| cache.value==null){
-        console.log('searchParam:' + searchParam +  ' not found');
+        //console.log('searchParam:' + searchParam +  ' not found');
+        // set caching to 10 days
+        var cacheDate = new Date();
+        cacheDate.setDate(cacheDate.getDate()+10);
+        var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
         $.ajax({
           type:'Get',
           url:requestUrl,
           success:function(data) {
             theData = data;
             displayResults(data);
-            cachedPages.save({key:searchParam, value: data});
-            console.log('Saving searchParam:' + searchParam);
+            cachedPages.save({key:searchParam, value: data, date: utcCache});
+            //console.log('Saving searchParam:' + searchParam);
           }
         });
       }else{
-        console.log('searchParam:' + searchParam + ' found');
-        displayResults(cache.value);
+        var today = new Date();
+        var utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate());
+        //console.log('utcToday: '+ utcToday);
+        //console.log('cache.date: '+ cache.date);
+        if(utcToday>cache.date){
+          console.log('cache out of date');
+          utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate()+10);
+          $.ajax({
+            type:'Get',
+            url:requestUrl,
+            success:function(data) {
+              theData = data;
+              displayResults(data);
+              cachedPages.save({key:searchParam, value: data, date: utcToday});
+              //console.log('Saving searchParam:' + searchParam);
+            }
+          });         
+        }else{
+          displayResults(cache.value);
+        }
       }
     });
 
