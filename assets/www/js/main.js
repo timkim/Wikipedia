@@ -1,5 +1,5 @@
 var currentHistoryIndex = 0;
-
+var cachedPages = null;
 function init() {
     document.addEventListener("deviceready", onDeviceReady, true);
 }
@@ -13,6 +13,7 @@ function onDeviceReady() {
   document.addEventListener("backbutton", onBackButton, false);
   document.addEventListener("searchbutton", onSearchButton, false); 
   
+  cachedPages = new Lawnchair({name:'cachedPages'},function(){console.log('caching availble')});
   // this has to be set for the window.history API to work properly
   PhoneGap.UsePolling = true;
     
