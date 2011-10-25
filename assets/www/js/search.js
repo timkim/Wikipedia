@@ -17,49 +17,13 @@ function search() {
 		var requestUrl = "http://en.wikipedia.org/w/api.php?action=opensearch&";
 		requestUrl += "search=" + encodeURIComponent(searchParam) + "&";
 		requestUrl += "format=json";
-
-    cachedPages.get(searchParam,function(cache){
-      if(cache==null|| cache.value==null){
-        //console.log('searchParam:' + searchParam +  ' not found');
-        // set caching to 10 days
-        var cacheDate = new Date();
-        cacheDate.setDate(cacheDate.getDate()+10);
-        var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
-        $.ajax({
-          type:'Get',
-          url:requestUrl,
-          success:function(data) {
-            theData = data;
-            displayResults(data);
-            cachedPages.save({key:searchParam, value: data, date: utcCache});
-            //console.log('Saving searchParam:' + searchParam);
-          }
-        });
-      }else{
-        var today = new Date();
-        var utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate());
-        //console.log('utcToday: '+ utcToday);
-        //console.log('cache.date: '+ cache.date);
-        if(utcToday>cache.date){
-          console.log('cache out of date');
-          utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate()+10);
-          $.ajax({
-            type:'Get',
-            url:requestUrl,
-            success:function(data) {
-              theData = data;
-              displayResults(data);
-              cachedPages.save({key:searchParam, value: data, date: utcToday});
-              //console.log('Saving searchParam:' + searchParam);
-            }
-          });         
-        }else{
-          displayResults(cache.value);
-        }
-      }
-    });
-
-
+    $.ajax({
+			type:'Get',
+			url:requestUrl,
+			success:function(data) {
+				displayResults(data);
+			}
+		});
 	}else{
 		noConnectionMsg();
 		hideOverlayDivs();
@@ -112,10 +76,46 @@ function displayResults(results) {
 function goToResult(article) {
 	if (hasNetworkConnection()) {
     $('#search').addClass('inProgress');
+    var frameDoc = null;
 		var url = "http://en.wikipedia.org/wiki/" + article;	
-		$('#main').attr('src', url);
-		hideOverlayDivs();
-		showContent();
+    
+    cachedPages.get(article,function(cache){
+      if(cache==null|| cache.value==null){
+
+        console.log('article:' + article +  ' not found');
+        // set caching to 10 days
+        var cacheDate = new Date();
+        cacheDate.setDate(cacheDate.getDate()+10);
+        var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
+        
+        $('#main').attr('src', url);
+        frameDoc = $("#main")[0].contentDocument;
+        hideOverlayDivs();
+        showContent();
+
+      }else{
+        var today = new Date();
+        var utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate());
+        //console.log('utcToday: '+ utcToday);
+        //console.log('cache.date: '+ cache.date);
+        if(utcToday>cache.date){
+          console.log('cache out of date');
+          utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate()+10);
+          
+          $('#main').attr('src', url);
+          frameDoc = $("#main")[0].contentDocument;
+          hideOverlayDivs();
+          showContent();
+
+          
+        }else{
+          frameDoc = $("#main")[0].contentDocument;
+          console.log('loading from cache');
+          $("body", frameDoc).html(cache.value);
+          //displayResults(cache.value);
+        }
+      }
+    });
 	}else{
 		noConnectionMsg();
 	}

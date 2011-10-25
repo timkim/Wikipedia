@@ -55,13 +55,57 @@ function hideMobileLinks() {
   // Internal links
   $('a[href^="/wiki/"]', frameDoc).click(function(e) {
     $('#search').addClass('inProgress');
+    /*
+    var searchParam = this.href.indexOf('/wiki/')[1];
+    cachedPages.get(searchParam,function(cache){
+      if(cache==null|| cache.value==null){
+        console.log('searchParam:' + searchParam +  ' not found');
+        // set caching to 10 days
+        var cacheDate = new Date();
+        cacheDate.setDate(cacheDate.getDate()+10);
+        var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
+        $.ajax({
+          type:'Get',
+          url:requestUrl,
+          success:function(data) {
+            theData = data;
+            displayResults(data);
+            cachedPages.save({key:searchParam, value: data, date: utcCache});
+            //console.log('Saving searchParam:' + searchParam);
+          }
+        });
+      }else{
+        var today = new Date();
+        var utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate());
+        //console.log('utcToday: '+ utcToday);
+        //console.log('cache.date: '+ cache.date);
+        if(utcToday>cache.date){
+          console.log('cache out of date');
+          utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate()+10);
+          $.ajax({
+            type:'Get',
+            url:requestUrl,
+            success:function(data) {
+              theData = data;
+              displayResults(data);
+              cachedPages.save({key:searchParam, value: data, date: utcToday});
+              //console.log('Saving searchParam:' + searchParam);
+            }
+          });         
+        }else{
+          displayResults(cache.value);
+        }
+      }
+    });
+    */
     currentHistoryIndex += 1;
+    
   });
 
   // External links
   $('a.external, a.extiw', frameDoc).click(function(event) {
     var target = $(this).attr('href');
-
+    
     // Stop the link from opening in the iframe...
     event.preventDefault();
 
@@ -79,6 +123,16 @@ function iframeOnLoaded(iframe) {
     hideMobileLinks();
     toggleForward();
     addToHistory();
+    
+    var cacheDate = new Date();
+    cacheDate.setDate(cacheDate.getDate()+10);
+    var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
+    
+    frameDoc = iframe.contentDocument;
+    var article = iframe.src.split('http://en.wikipedia.org/wiki/')[1];
+    console.log('saving '+ article);
+    cachedPages.save({key:article, value: $("body", frameDoc).html(), date: utcCache});
+
     $('#search').removeClass('inProgress');
     console.log('currentHistoryIndex '+currentHistoryIndex + ' history length '+history.length);
   }
