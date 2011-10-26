@@ -55,49 +55,32 @@ function hideMobileLinks() {
   // Internal links
   $('a[href^="/wiki/"]', frameDoc).click(function(e) {
     $('#search').addClass('inProgress');
-    /*
-    var searchParam = this.href.indexOf('/wiki/')[1];
-    cachedPages.get(searchParam,function(cache){
-      if(cache==null|| cache.value==null){
-        console.log('searchParam:' + searchParam +  ' not found');
-        // set caching to 10 days
-        var cacheDate = new Date();
-        cacheDate.setDate(cacheDate.getDate()+10);
-        var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
-        $.ajax({
-          type:'Get',
-          url:requestUrl,
-          success:function(data) {
-            theData = data;
-            displayResults(data);
-            cachedPages.save({key:searchParam, value: data, date: utcCache});
-            //console.log('Saving searchParam:' + searchParam);
-          }
-        });
-      }else{
+    // disable click event now because of asynch nature of getting cached article
+    e.preventDefault();
+    
+    var articleFullUrl = e.currentTarget.href;
+    var article = e.currentTarget.href.split('/wiki/')[1];
+    console.log('link article ' + article);
+    // implicit saving of the page if not article not in cache
+    // todo - refactor so this is more clean
+    cachedPages.get(article,function(cache){
+      if(cache !=null){
+        console.log('get cached version of link of ' + article);
         var today = new Date();
         var utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate());
-        //console.log('utcToday: '+ utcToday);
-        //console.log('cache.date: '+ cache.date);
-        if(utcToday>cache.date){
-          console.log('cache out of date');
-          utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate()+10);
-          $.ajax({
-            type:'Get',
-            url:requestUrl,
-            success:function(data) {
-              theData = data;
-              displayResults(data);
-              cachedPages.save({key:searchParam, value: data, date: utcToday});
-              //console.log('Saving searchParam:' + searchParam);
-            }
-          });         
-        }else{
-          displayResults(cache.value);
+        console.log('utcToday ' + utcToday);
+        console.log('cache.date ' + cache.date);
+        if(utcToday<cache.date){
+          console.log('utc today is less than cache date');
+          $("body", frameDoc).html(cache.value);
+          cacheLoaded();
         }
+      }else{
+        console.log('not in cache');
+        $('#main').attr('src', articleFullUrl);
       }
     });
-    */
+      
     currentHistoryIndex += 1;
     
   });
@@ -117,6 +100,12 @@ function hideMobileLinks() {
   });
 }
 
+function cacheLoaded(){
+  window.scroll(0,0);
+  hideMobileLinks();
+  toggleForward();
+}
+
 function iframeOnLoaded(iframe) {
   if(iframe.src) {
     window.scroll(0,0);
@@ -129,10 +118,14 @@ function iframeOnLoaded(iframe) {
     var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
     
     frameDoc = iframe.contentDocument;
-    var article = iframe.src.split('http://en.wikipedia.org/wiki/')[1];
-    console.log('saving '+ article);
-    cachedPages.save({key:article, value: $("body", frameDoc).html(), date: utcCache});
-
+    var article = frameDoc.location.href.split('/wiki/');
+    // don't save main page
+    if(article.length>1){
+      article = article[1];
+      console.log('saving '+ article);
+      cachedPages.save({key:article, value: $("body", frameDoc).html(), date: utcCache});
+    }
+    
     $('#search').removeClass('inProgress');
     console.log('currentHistoryIndex '+currentHistoryIndex + ' history length '+history.length);
   }

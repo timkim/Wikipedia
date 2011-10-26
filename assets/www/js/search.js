@@ -81,13 +81,10 @@ function goToResult(article) {
     
     cachedPages.get(article,function(cache){
       if(cache==null|| cache.value==null){
-
-        console.log('article:' + article +  ' not found');
-        // set caching to 10 days
-        var cacheDate = new Date();
-        cacheDate.setDate(cacheDate.getDate()+10);
-        var utcCache = Date.UTC(cacheDate.getFullYear(),cacheDate.getMonth(), cacheDate.getDate());
+        console.log('article: ' + article +  ' not found in cache');
         
+        // implicit saving of the page when we set src of iframe 
+        // todo - refactor so this is more clean
         $('#main').attr('src', url);
         frameDoc = $("#main")[0].contentDocument;
         hideOverlayDivs();
@@ -96,12 +93,12 @@ function goToResult(article) {
       }else{
         var today = new Date();
         var utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate());
-        //console.log('utcToday: '+ utcToday);
-        //console.log('cache.date: '+ cache.date);
+        
         if(utcToday>cache.date){
-          console.log('cache out of date');
-          utcToday = Date.UTC(today.getFullYear(),today.getMonth(), today.getDate()+10);
+          console.log('article: ' + article +  ' cache expired');
           
+          // implicit saving of the page when we set src of iframe 
+          // todo - refactor so this is more clean
           $('#main').attr('src', url);
           frameDoc = $("#main")[0].contentDocument;
           hideOverlayDivs();
@@ -110,9 +107,10 @@ function goToResult(article) {
           
         }else{
           frameDoc = $("#main")[0].contentDocument;
-          console.log('loading from cache');
+          console.log('article: ' + article +  ' loading from cache');
           $("body", frameDoc).html(cache.value);
-          //displayResults(cache.value);
+          cacheLoaded();
+          console.log($("img", frameDoc)[0].src);
         }
       }
     });
